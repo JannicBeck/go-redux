@@ -6,6 +6,9 @@ const IncrementType = "Increment"
 const DecrementType = "Decrement"
 
 func Counter(state interface{}, action redux.Action) interface{} {
+	if state == nil {
+		state = 0
+	}
 	switch action.Type {
 	case IncrementType:
 		return state.(int) + 1
