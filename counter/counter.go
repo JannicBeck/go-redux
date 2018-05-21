@@ -5,7 +5,7 @@ import "github.com/jannicbeck/redux/redux"
 const IncrementType = "Increment"
 const DecrementType = "Decrement"
 
-func Counter(state interface{}, action redux.Action) interface{} {
+func Counter(state redux.State, action redux.Action) redux.State {
 	if state == nil {
 		state = 0
 	}
