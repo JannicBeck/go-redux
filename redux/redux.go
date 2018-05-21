@@ -4,20 +4,36 @@ type Action struct {
 	Type string
 }
 
-type subscriber func(interface{})
+type State interface{}
+
+type Reducer func(State, Action) State
+
+type subscriber func(State)
 
 type Store struct {
 	subscribers []subscriber
-	State       interface{}
-	reducer     func(state interface{}, action Action) interface{}
+	state       State
+	reducer     func(state State, action Action) State
 }
 
-func (s *Store) ReplaceReducer(reducer func(state interface{}, action Action) interface{}) {
+func CreateStore(reducer Reducer) Store {
+	initialState := reducer(nil, Action{})
+	store := Store{}
+	store.setState(initialState)
+	store.ReplaceReducer(reducer)
+	return store
+}
+
+func (s *Store) ReplaceReducer(reducer Reducer) {
 	s.reducer = reducer
 }
 
-func (s *Store) GetState() interface{} {
-	return s.State
+func (s *Store) GetState() State {
+	return s.state
+}
+
+func (s *Store) setState(state State) {
+	s.state = state
 }
 
 func (s *Store) Subscribe(l subscriber) func() {
@@ -35,10 +51,10 @@ func (s *Store) Subscribe(l subscriber) func() {
 
 func (s *Store) Dispatch(action Action) {
 
-	s.State = s.reducer(s.State.(int), action)
+	s.state = s.reducer(s.state.(int), action)
 
 	for _, l := range s.subscribers {
-		l(s.State)
+		l(s.state)
 	}
 
 }
