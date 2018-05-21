@@ -17,14 +17,14 @@ type Action struct {
 
 type State interface{}
 
-type Reducer func(State, Action) State
+type Reducer func(State, Action) (State, error)
 
 type Subscriber func(State)
 
 type Store struct {
 	subscribers   []Subscriber
 	state         State
-	reducer       func(state State, action Action) State
+	reducer       Reducer
 	isDispatching bool
 }
 
@@ -34,7 +34,10 @@ func CreateStore(reducer Reducer) Store {
 		log.Fatal(noReducerProvidedErrMsg)
 	}
 
-	initialState := reducer(nil, Action{})
+	initialState, err := reducer(nil, Action{})
+	if err != nil {
+		log.Fatal("Error when producing initial state")
+	}
 	if initialState == nil {
 		log.Fatal(noInitialStateProducedErrMsg)
 	}
@@ -113,10 +116,22 @@ func removeSubscriber(store *Store, subscriberIndex int) {
 
 func (store *Store) Dispatch(action Action) {
 
-	store.state = store.reducer(store.state.(int), action)
-
-	for _, l := range store.subscribers {
-		l(store.state)
+	if store.isDispatching {
+		log.Fatal("Reducers may not dispatch actions.")
 	}
 
+	state, err := store.reducer(store.state.(int), action)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	store.setState(state)
+	notifySubscribers(store)
+
+}
+
+func notifySubscribers(store *Store) {
+	for _, sub := range store.subscribers {
+		sub(store.state)
+	}
 }

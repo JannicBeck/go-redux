@@ -11,17 +11,17 @@ import (
 const IncrementType = "Increment"
 const DecrementType = "Decrement"
 
-func counter(state State, action Action) State {
+func counter(state State, action Action) (State, error) {
 	if state == nil {
 		state = 0
 	}
 	switch action.Type {
 	case IncrementType:
-		return state.(int) + 1
+		return state.(int) + 1, nil
 	case DecrementType:
-		return state.(int) - 1
+		return state.(int) - 1, nil
 	default:
-		return state
+		return state, nil
 	}
 }
 
@@ -50,8 +50,8 @@ func TestCreateStore(t *testing.T) {
 func TestCreateStoreWithoutInitialStateFatal(t *testing.T) {
 
 	fn := func() {
-		CreateStore(func(state State, action Action) State {
-			return state
+		CreateStore(func(state State, action Action) (State, error) {
+			return state, nil
 		})
 	}
 	command := "-test.run=TestCreateStoreWithoutInitialStateFatal"
@@ -157,17 +157,17 @@ func TestSubscription(t *testing.T) {
 func TestReplaceReducer(t *testing.T) {
 
 	store := CreateStore(counter)
-	store.ReplaceReducer(func(state State, action Action) State {
+	store.ReplaceReducer(func(state State, action Action) (State, error) {
 		if state == nil {
 			state = 0
 		}
 		switch action.Type {
 		case IncrementType:
-			return state.(int) + 10
+			return state.(int) + 10, nil
 		case DecrementType:
-			return state.(int) - 10
+			return state.(int) - 10, nil
 		default:
-			return state
+			return state, nil
 		}
 	})
 
