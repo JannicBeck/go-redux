@@ -9,9 +9,11 @@ import (
 
 func main() {
 	store := redux.CreateStore(counter.Counter)
-	unsubscribe := store.Subscribe(func(state redux.State) {
+	var printState redux.Subscriber
+	printState = func(state redux.State) {
 		fmt.Println(state)
-	})
+	}
+	unsubscribe := store.Subscribe(&printState)
 
 	store.Dispatch(counter.Increment())
 	store.Dispatch(counter.Increment())

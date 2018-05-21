@@ -75,9 +75,9 @@ func (store *Store) setState(state State) {
 	store.state = state
 }
 
-func (store *Store) Subscribe(subscriber Subscriber) func() {
+func (store *Store) Subscribe(subscriber *Subscriber) func() {
 
-	if subscriber == nil {
+	if *subscriber == nil {
 		log.Fatal(`Subscriber must not be nil`)
 	}
 
@@ -108,16 +108,16 @@ func (store *Store) Subscribe(subscriber Subscriber) func() {
 
 }
 
-func addSubscriber(store *Store, subscriber Subscriber) {
-	store.subscribers = append(store.subscribers, &subscriber)
+func addSubscriber(store *Store, subscriber *Subscriber) {
+	store.subscribers = append(store.subscribers, subscriber)
 }
 
-func removeSubscriber(store *Store, subscriber Subscriber) {
+func removeSubscriber(store *Store, subscriber *Subscriber) {
 
 	var subscriberIndex int
 
 	for index, sub := range store.subscribers {
-		if sub == &subscriber {
+		if sub == subscriber {
 			subscriberIndex = index
 		}
 	}
