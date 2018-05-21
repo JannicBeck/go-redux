@@ -1,5 +1,7 @@
 package redux
 
+import "log"
+
 type Action struct {
 	Type    string
 	Payload interface{}
@@ -19,9 +21,20 @@ type Store struct {
 
 func CreateStore(reducer Reducer) Store {
 	initialState := reducer(nil, Action{})
+	if initialState == nil {
+		log.Fatal(`Error: No initialState produced by the supplied reducer.
+			Please make sure to check state == nil and assign to it an initial value inside your reducer.
+			If you don't know the initial state inside your reducer, you might want to use CreateStoreWithState.`)
+	}
 	store := Store{}
 	store.setState(initialState)
 	store.ReplaceReducer(reducer)
+	return store
+}
+
+func CreateStoreWithState(reducer Reducer, preloadedState State) Store {
+	store := CreateStore(reducer)
+	store.setState(preloadedState)
 	return store
 }
 
