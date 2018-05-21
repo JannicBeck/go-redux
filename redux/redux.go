@@ -1,7 +1,8 @@
 package redux
 
 type Action struct {
-	Type string
+	Type    string
+	Payload interface{}
 }
 
 type State interface{}
