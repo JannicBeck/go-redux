@@ -53,8 +53,13 @@ func CreateStoreWithState(reducer Reducer, preloadedState State) Store {
 	return store
 }
 
-func (store *Store) ReplaceReducer(reducer Reducer) {
-	store.reducer = reducer
+func (store *Store) ReplaceReducer(nextReducer Reducer) {
+
+	if nextReducer == nil {
+		log.Fatal("Expected the nextReducer to be a function.")
+	}
+
+	store.reducer = nextReducer
 }
 
 func (store *Store) GetState() State {
