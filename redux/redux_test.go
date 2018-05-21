@@ -125,14 +125,24 @@ func TestSubscription(t *testing.T) {
 
 	store := CreateStore(counter)
 	callbackCount := 0
-	var subscriber Subscriber
-	subscriber = func(state State) {
+
+	var subscriber1 Subscriber
+	subscriber1 = func(state State) {
 		callbackCount = callbackCount + 1
 	}
-	unsubscribe := store.Subscribe(&subscriber)
 
-	if store.subscribers[0] != &subscriber {
-		t.Errorf("Wrong sub %v got %v", &subscriber, store.subscribers[0])
+	// Create a second subscriber which will subscribe before the first one
+	// and immediately unsubscribe to catch bugs related to indexing.
+	// E.g. we can not cache indices of subscribers since the indices change when unsubscribing.
+	var subscriber2 Subscriber
+	subscriber2 = func(state State) {
+	}
+	store.Subscribe(&subscriber2)()
+
+	unsubscribe := store.Subscribe(&subscriber1)
+
+	if store.subscribers[0] != &subscriber1 {
+		t.Errorf("Wrong subscriber %v got %v", &subscriber1, store.subscribers[0])
 	}
 
 	if len(store.subscribers) != 1 {
