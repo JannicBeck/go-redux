@@ -22,7 +22,7 @@ type Reducer func(State, Action) (State, error)
 type Subscriber func(State)
 
 type Store struct {
-	subscribers   []Subscriber
+	subscribers   []*Subscriber
 	state         State
 	reducer       Reducer
 	isDispatching bool
@@ -83,7 +83,7 @@ func (store *Store) Subscribe(subscriber Subscriber) func() {
 			See https://redux.js.org/api-reference/store#subscribe(listener) for more details.`)
 	}
 
-	subscriberIndex := addSubscriber(store, subscriber)
+	addSubscriber(store, subscriber)
 	isSubscribed := true
 
 	return func() {
@@ -96,19 +96,27 @@ func (store *Store) Subscribe(subscriber Subscriber) func() {
 				See https://redux.js.org/api-reference/store#subscribe(listener) for more details.`)
 		}
 
-		removeSubscriber(store, subscriberIndex)
+		removeSubscriber(store, subscriber)
 		isSubscribed = false
 
 	}
 
 }
 
-func addSubscriber(store *Store, subscriber Subscriber) int {
-	store.subscribers = append(store.subscribers, subscriber)
-	return len(store.subscribers) - 1
+func addSubscriber(store *Store, subscriber Subscriber) {
+	store.subscribers = append(store.subscribers, &subscriber)
 }
 
-func removeSubscriber(store *Store, subscriberIndex int) {
+func removeSubscriber(store *Store, subscriber Subscriber) {
+
+	var subscriberIndex int
+
+	for index, sub := range store.subscribers {
+		if sub == &subscriber {
+			subscriberIndex = index
+		}
+	}
+
 	store.subscribers[subscriberIndex] = store.subscribers[len(store.subscribers)-1]
 	store.subscribers[len(store.subscribers)-1] = nil
 	store.subscribers = store.subscribers[:len(store.subscribers)-1]
@@ -121,17 +129,19 @@ func (store *Store) Dispatch(action Action) {
 	}
 
 	state, err := store.reducer(store.state.(int), action)
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	store.setState(state)
-	notifySubscribers(store)
+	// or log.Fatal?
+	if err != nil {
+		log.Print(err)
+	} else {
+		store.setState(state)
+		notifySubscribers(store)
+	}
 
 }
 
 func notifySubscribers(store *Store) {
 	for _, sub := range store.subscribers {
-		sub(store.state)
+		(*sub)(store.state)
 	}
 }
