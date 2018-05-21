@@ -1,6 +1,14 @@
 package redux
 
-import "log"
+import (
+	"log"
+)
+
+const noInitialStateProducedErrMsg = `Error: No initialState produced by the supplied reducer.
+	Please make sure to check state == nil and assign to it an initial value inside your reducer.
+	If you don't know the initial state inside your reducer, you might want to use CreateStoreWithState.`
+
+const noReducerProvidedErrMsg = "Reducer must not be nil"
 
 type Action struct {
 	Type    string
@@ -20,11 +28,14 @@ type Store struct {
 }
 
 func CreateStore(reducer Reducer) Store {
+
+	if reducer == nil {
+		log.Fatal(noReducerProvidedErrMsg)
+	}
+
 	initialState := reducer(nil, Action{})
 	if initialState == nil {
-		log.Fatal(`Error: No initialState produced by the supplied reducer.
-			Please make sure to check state == nil and assign to it an initial value inside your reducer.
-			If you don't know the initial state inside your reducer, you might want to use CreateStoreWithState.`)
+		log.Fatal(noInitialStateProducedErrMsg)
 	}
 	store := Store{}
 	store.setState(initialState)

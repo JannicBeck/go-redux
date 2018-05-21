@@ -49,16 +49,35 @@ func TestCreateStore(t *testing.T) {
 
 func TestCreateStoreWithoutInitialStateFatal(t *testing.T) {
 
-	// Only run the failing part when a specific env variable is set
-	if os.Getenv("BE_CRASHER") == "1" {
+	fn := func() {
 		CreateStore(func(state State, action Action) State {
 			return state
 		})
+	}
+	command := "-test.run=TestCreateStoreWithoutInitialStateFatal"
+
+	crashTest(t, fn, command, noInitialStateProducedErrMsg)
+}
+
+func TestCreateStoreWithoutReducerFatal(t *testing.T) {
+
+	fn := func() {
+		CreateStore(nil)
+	}
+	command := "-test.run=TestCreateStoreWithoutReducerFatal"
+
+	crashTest(t, fn, command, noReducerProvidedErrMsg)
+}
+
+func crashTest(t *testing.T, fn func(), command string, errMsg string) {
+	// Only run the failing part when a specific env variable is set
+	if os.Getenv("BE_CRASHER") == "1" {
+		fn()
 		return
 	}
 
 	// Start the actual test in a different subprocess
-	cmd := exec.Command(os.Args[0], "-test.run=TestCreateStoreWithoutInitialStateFatal")
+	cmd := exec.Command(os.Args[0], command)
 	cmd.Env = append(os.Environ(), "BE_CRASHER=1")
 	stdout, _ := cmd.StderrPipe()
 	if err := cmd.Start(); err != nil {
@@ -68,11 +87,9 @@ func TestCreateStoreWithoutInitialStateFatal(t *testing.T) {
 	// Check that the log fatal message is what we expected
 	gotBytes, _ := ioutil.ReadAll(stdout)
 	got := string(gotBytes)
-	expected := `Error: No initialState produced by the supplied reducer.
-			Please make sure to check state == nil and assign to it an initial value inside your reducer.
-			If you don't know the initial state inside your reducer, you might want to use CreateStoreWithState.`
-	if !strings.HasSuffix(got[:len(got)-1], expected) {
-		t.Fatalf("Unexpected log message. Got %s but should contain %s", got[:len(got)-1], expected)
+
+	if !strings.HasSuffix(got[:len(got)-1], errMsg) {
+		t.Fatalf("Unexpected log message. Got %s but should contain %s", got[:len(got)-1], errMsg)
 	}
 
 	// Check that the program exited
