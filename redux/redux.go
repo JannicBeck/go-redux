@@ -114,17 +114,15 @@ func addSubscriber(store *Store, subscriber *Subscriber) {
 
 func removeSubscriber(store *Store, subscriber *Subscriber) {
 
-	var subscriberIndex int
-
 	for index, sub := range store.subscribers {
 		if sub == subscriber {
-			subscriberIndex = index
+			store.subscribers[index] = store.subscribers[len(store.subscribers)-1]
+			store.subscribers[len(store.subscribers)-1] = nil
+			store.subscribers = store.subscribers[:len(store.subscribers)-1]
+			break
 		}
 	}
 
-	store.subscribers[subscriberIndex] = store.subscribers[len(store.subscribers)-1]
-	store.subscribers[len(store.subscribers)-1] = nil
-	store.subscribers = store.subscribers[:len(store.subscribers)-1]
 }
 
 func (store *Store) Dispatch(action Action) {
