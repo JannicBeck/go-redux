@@ -8,10 +8,8 @@ import (
 )
 
 func main() {
-	state := counter.Counter(1, counter.Increment())
-	state = counter.Counter(state, counter.Decrement())
 	store := redux.CreateStore(counter.Counter)
-	unsubscribe := store.Subscribe(func(state interface{}) {
+	unsubscribe := store.Subscribe(func(state redux.State) {
 		fmt.Println(state)
 	})
 	store.Dispatch(counter.Increment())
