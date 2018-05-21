@@ -12,6 +12,7 @@ func main() {
 	unsubscribe := store.Subscribe(func(state redux.State) {
 		fmt.Println(state)
 	})
+
 	store.Dispatch(counter.Increment())
 	store.Dispatch(counter.Increment())
 	unsubscribe()

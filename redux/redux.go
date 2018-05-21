@@ -19,12 +19,13 @@ type State interface{}
 
 type Reducer func(State, Action) State
 
-type subscriber func(State)
+type Subscriber func(State)
 
 type Store struct {
-	subscribers []subscriber
-	state       State
-	reducer     func(state State, action Action) State
+	subscribers   []Subscriber
+	state         State
+	reducer       func(state State, action Action) State
+	isDispatching bool
 }
 
 func CreateStore(reducer Reducer) Store {
@@ -49,37 +50,73 @@ func CreateStoreWithState(reducer Reducer, preloadedState State) Store {
 	return store
 }
 
-func (s *Store) ReplaceReducer(reducer Reducer) {
-	s.reducer = reducer
+func (store *Store) ReplaceReducer(reducer Reducer) {
+	store.reducer = reducer
 }
 
-func (s *Store) GetState() State {
-	return s.state
+func (store *Store) GetState() State {
+	if store.isDispatching {
+		log.Fatal(`You may not call store.getState() while the reducer is executing.
+			The reducer has already received the state as an argument.
+			Pass it down from the top reducer instead of reading it from the store.`)
+	}
+	return store.state
 }
 
-func (s *Store) setState(state State) {
-	s.state = state
+func (store *Store) setState(state State) {
+	store.state = state
 }
 
-func (s *Store) Subscribe(l subscriber) func() {
+func (store *Store) Subscribe(subscriber Subscriber) func() {
 
-	s.subscribers = append(s.subscribers, l)
-	i := len(s.subscribers) - 1
+	if subscriber == nil {
+		log.Fatal(`Subscriber must not be nil`)
+	}
+
+	if store.isDispatching {
+		log.Fatal(`You may not call store.subscribe() while the reducer is executing.
+			If you would like to be notified after the store has been updated, subscribe from a
+			component and invoke store.getState() in the callback to access the latest state.
+			See https://redux.js.org/api-reference/store#subscribe(listener) for more details.`)
+	}
+
+	subscriberIndex := addSubscriber(store, subscriber)
+	isSubscribed := true
 
 	return func() {
-		s.subscribers[i] = s.subscribers[len(s.subscribers)-1]
-		s.subscribers[len(s.subscribers)-1] = nil
-		s.subscribers = s.subscribers[:len(s.subscribers)-1]
+		if !isSubscribed {
+			return
+		}
+
+		if store.isDispatching {
+			log.Fatal(`You may not unsubscribe from a store listener while the reducer is executing.
+				See https://redux.js.org/api-reference/store#subscribe(listener) for more details.`)
+		}
+
+		removeSubscriber(store, subscriberIndex)
+		isSubscribed = false
+
 	}
 
 }
 
-func (s *Store) Dispatch(action Action) {
+func addSubscriber(store *Store, subscriber Subscriber) int {
+	store.subscribers = append(store.subscribers, subscriber)
+	return len(store.subscribers) - 1
+}
 
-	s.state = s.reducer(s.state.(int), action)
+func removeSubscriber(store *Store, subscriberIndex int) {
+	store.subscribers[subscriberIndex] = store.subscribers[len(store.subscribers)-1]
+	store.subscribers[len(store.subscribers)-1] = nil
+	store.subscribers = store.subscribers[:len(store.subscribers)-1]
+}
 
-	for _, l := range s.subscribers {
-		l(s.state)
+func (store *Store) Dispatch(action Action) {
+
+	store.state = store.reducer(store.state.(int), action)
+
+	for _, l := range store.subscribers {
+		l(store.state)
 	}
 
 }
