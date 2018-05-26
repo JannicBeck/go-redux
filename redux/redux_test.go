@@ -15,7 +15,7 @@ func counter(state State, action Action) (State, error) {
 	if state == nil {
 		state = 0
 	}
-	switch action.Type {
+	switch action.Type() {
 	case IncrementType:
 		return state.(int) + 1, nil
 	case DecrementType:
@@ -25,12 +25,18 @@ func counter(state State, action Action) (State, error) {
 	}
 }
 
-func Increment() Action {
-	return Action{Type: IncrementType}
+type Increment struct {
 }
 
-func Decrement() Action {
-	return Action{Type: DecrementType}
+func (inc Increment) Type() string {
+	return IncrementType
+}
+
+type Decrement struct {
+}
+
+func (dec Decrement) Type() string {
+	return DecrementType
 }
 
 func TestCreateStore(t *testing.T) {
@@ -107,9 +113,9 @@ func TestStore(t *testing.T) {
 		a Action
 		s int
 	}{
-		{Increment(), 1},
-		{Increment(), 2},
-		{Decrement(), 1},
+		{Increment{}, 1},
+		{Increment{}, 2},
+		{Decrement{}, 1},
 	}
 	for _, c := range tests {
 		store.Dispatch(c.a)
@@ -149,12 +155,12 @@ func TestSubscription(t *testing.T) {
 		t.Errorf("Expected subscriber count to be %v got %v", 1, len(store.subscribers))
 	}
 
-	store.Dispatch(Increment())
+	store.Dispatch(Increment{})
 	if callbackCount != 1 {
 		t.Errorf("Subscribe state: %v, want %v", callbackCount, 1)
 	}
 
-	store.Dispatch(Increment())
+	store.Dispatch(Increment{})
 
 	if callbackCount != 2 {
 		t.Errorf("Subscribe state: %v, want %v", callbackCount, 2)
@@ -162,7 +168,7 @@ func TestSubscription(t *testing.T) {
 
 	unsubscribe()
 
-	store.Dispatch(Increment())
+	store.Dispatch(Increment{})
 
 	if callbackCount != 2 {
 		t.Errorf("Unsubscribed state: %v, want %v", callbackCount, 2)
@@ -177,7 +183,7 @@ func TestReplaceReducer(t *testing.T) {
 		if state == nil {
 			state = 0
 		}
-		switch action.Type {
+		switch action.Type() {
 		case IncrementType:
 			return state.(int) + 10, nil
 		case DecrementType:
@@ -187,7 +193,7 @@ func TestReplaceReducer(t *testing.T) {
 		}
 	})
 
-	store.Dispatch(Increment())
+	store.Dispatch(Increment{})
 	if store.GetState() != 10 {
 		t.Errorf("%v got %v", 10, store.GetState())
 	}
