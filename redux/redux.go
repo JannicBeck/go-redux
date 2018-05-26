@@ -10,9 +10,8 @@ const noInitialStateProducedErrMsg = `Error: No initialState produced by the sup
 
 const noReducerProvidedErrMsg = "Reducer must not be nil"
 
-type Action struct {
-	Type    string
-	Payload interface{}
+type Action interface {
+	Type() string
 }
 
 type State interface{}
@@ -28,13 +27,20 @@ type Store struct {
 	isDispatching bool
 }
 
+type InitAction struct {
+}
+
+func (i InitAction) Type() string {
+	return "@@Gorux/INIT"
+}
+
 func CreateStore(reducer Reducer) Store {
 
 	if reducer == nil {
 		log.Fatal(noReducerProvidedErrMsg)
 	}
 
-	initialState, err := reducer(nil, Action{})
+	initialState, err := reducer(nil, InitAction{})
 	if err != nil {
 		log.Fatal("Error when producing initial state")
 	}
@@ -134,7 +140,7 @@ func (store *Store) Dispatch(action Action) {
 		log.Fatal("Reducers may not dispatch actions.")
 	}
 
-	state, err := store.reducer(store.state.(int), action)
+	state, err := store.reducer(store.state, action)
 
 	// or log.Fatal?
 	if err != nil {
