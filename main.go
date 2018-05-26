@@ -5,6 +5,7 @@ import (
 
 	"github.com/jannicbeck/redux/counter"
 	"github.com/jannicbeck/redux/redux"
+	"github.com/jannicbeck/redux/todos"
 )
 
 func combineReducers(reducers map[string]redux.Reducer) func(redux.State, redux.Action) (redux.State, error) {
@@ -12,7 +13,6 @@ func combineReducers(reducers map[string]redux.Reducer) func(redux.State, redux.
 		if state == nil {
 			state = make(map[string]redux.State)
 		}
-		hasChanged := false
 		var err error
 		var nextState redux.State
 		nextState = make(map[string]redux.State)
@@ -21,12 +21,9 @@ func combineReducers(reducers map[string]redux.Reducer) func(redux.State, redux.
 			var nextStateForKey redux.State
 			nextStateForKey, err = reducer(previousStateForKey, action)
 			nextState.(map[string]redux.State)[key] = nextStateForKey
-			hasChanged = hasChanged || nextStateForKey != previousStateForKey
 		}
-		if hasChanged {
-			return nextState, err
-		}
-		return state, err
+
+		return nextState, err
 	}
 }
 
@@ -64,20 +61,26 @@ func combineReducers(reducers map[string]redux.Reducer) func(redux.State, redux.
 
 func main() {
 
-	// reducerMap := make(map[string]redux.Reducer)
-	// reducerMap["counter"] = counter.Counter
-	// reducerMap["todos"] = todos.Todos
-	// root := combineReducers(reducerMap)
+	reducerMap := make(map[string]redux.Reducer)
+	reducerMap["counter"] = counter.Counter
+	todosMap := make(map[string]redux.Reducer)
+	todosMap["todos"] = todos.Todos
+	todosMap["visibilityFilter"] = todos.VisibilityFilter
+	todosReducer := combineReducers(todosMap)
+	reducerMap["todos"] = todosReducer
+	root := combineReducers(reducerMap)
 
-	store := redux.CreateStore(counter.Counter)
+	store := redux.CreateStore(root)
 	var printState redux.Subscriber
 	printState = func(state redux.State) {
 		fmt.Println(state)
 	}
 	unsubscribe := store.Subscribe(&printState)
-
-	store.Dispatch(counter.Increment{})
+	store.Dispatch(todos.AddTodo{Id: "1", Text: "First"})
+	store.Dispatch(todos.AddTodo{Id: "2", Text: "Second"})
+	store.Dispatch(todos.AddTodo{Id: "3", Text: "Third"})
+	store.Dispatch(todos.ToggleTodo{Id: "2"})
 	store.Dispatch(counter.Increment{})
 	unsubscribe()
-	store.Dispatch(counter.Increment{})
+
 }
