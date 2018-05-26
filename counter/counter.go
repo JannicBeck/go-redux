@@ -9,7 +9,7 @@ func Counter(state redux.State, action redux.Action) (redux.State, error) {
 	if state == nil {
 		state = 0
 	}
-	switch action.Type {
+	switch action.Type() {
 	case IncrementType:
 		return state.(int) + 1, nil
 	case DecrementType:
@@ -19,10 +19,16 @@ func Counter(state redux.State, action redux.Action) (redux.State, error) {
 	}
 }
 
-func Increment() redux.Action {
-	return redux.Action{Type: IncrementType}
+type Increment struct {
 }
 
-func Decrement() redux.Action {
-	return redux.Action{Type: DecrementType}
+func (inc Increment) Type() string {
+	return IncrementType
+}
+
+type Decrement struct {
+}
+
+func (dec Decrement) Type() string {
+	return DecrementType
 }
