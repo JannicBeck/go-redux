@@ -20,11 +20,70 @@ type Reducer func(State, Action) (State, error)
 
 type Subscriber func(State)
 
-type Store struct {
-	subscribers   []*Subscriber
+type StoreBase struct {
+	isDispatching bool
+	reducer       Reducer
 	state         State
+}
+
+func (store *StoreBase) GetState() State {
+	return store.state
+}
+
+func (store *StoreBase) Dispatch(action Action) {
+
+	if store.isDispatching {
+		log.Fatal("Reducers may not dispatch actions.")
+	}
+
+	state, err := store.reducer(store.state, action)
+
+	if err != nil {
+		log.Fatal(err)
+	} else {
+		store.setState(state)
+	}
+}
+
+func (store *StoreBase) setState(state State) {
+	store.state = state
+}
+
+func CreateStoreAtom(reducer Reducer, initialState State) StoreBase {
+	store := StoreBase{}
+	store.reducer = reducer
+	store.setState(initialState)
+	return store
+}
+
+type Store struct {
+	storeBase     StoreBase
+	subscribers   []*Subscriber
 	reducer       Reducer
 	isDispatching bool
+}
+
+func (store *Store) ReplaceReducer(nextReducer Reducer) {
+
+	if nextReducer == nil {
+		log.Fatal("Expected the nextReducer to be a function.")
+	}
+
+	if nextReducer == nil {
+		log.Fatal(noReducerProvidedErrMsg)
+	}
+
+	initialState, err := nextReducer(nil, InitAction{})
+	if err != nil {
+		log.Fatal("Error when producing initial state")
+	}
+	if initialState == nil {
+		log.Fatal(noInitialStateProducedErrMsg)
+	}
+
+	store.storeBase = CreateStoreAtom(nextReducer, initialState)
+
+	store.reducer = nextReducer
 }
 
 type InitAction struct {
@@ -36,49 +95,13 @@ func (i InitAction) Type() string {
 
 func CreateStore(reducer Reducer) Store {
 
-	if reducer == nil {
-		log.Fatal(noReducerProvidedErrMsg)
-	}
-
-	initialState, err := reducer(nil, InitAction{})
-	if err != nil {
-		log.Fatal("Error when producing initial state")
-	}
-	if initialState == nil {
-		log.Fatal(noInitialStateProducedErrMsg)
-	}
 	store := Store{}
-	store.setState(initialState)
 	store.ReplaceReducer(reducer)
 	return store
 }
 
-func CreateStoreWithState(reducer Reducer, preloadedState State) Store {
-	store := CreateStore(reducer)
-	store.setState(preloadedState)
-	return store
-}
-
-func (store *Store) ReplaceReducer(nextReducer Reducer) {
-
-	if nextReducer == nil {
-		log.Fatal("Expected the nextReducer to be a function.")
-	}
-
-	store.reducer = nextReducer
-}
-
 func (store *Store) GetState() State {
-	if store.isDispatching {
-		log.Fatal(`You may not call store.getState() while the reducer is executing.
-			The reducer has already received the state as an argument.
-			Pass it down from the top reducer instead of reading it from the store.`)
-	}
-	return store.state
-}
-
-func (store *Store) setState(state State) {
-	store.state = state
+	return store.storeBase.GetState()
 }
 
 func (store *Store) Subscribe(subscriber *Subscriber) func() {
@@ -114,6 +137,11 @@ func (store *Store) Subscribe(subscriber *Subscriber) func() {
 
 }
 
+func (store *Store) Dispatch(action Action) {
+	store.storeBase.Dispatch(action)
+	store.onChange()
+}
+
 func addSubscriber(store *Store, subscriber *Subscriber) {
 	store.subscribers = append(store.subscribers, subscriber)
 }
@@ -134,26 +162,8 @@ func removeSubscriber(store *Store, subscriber *Subscriber) {
 
 }
 
-func (store *Store) Dispatch(action Action) {
-
-	if store.isDispatching {
-		log.Fatal("Reducers may not dispatch actions.")
-	}
-
-	state, err := store.reducer(store.state, action)
-
-	// or log.Fatal?
-	if err != nil {
-		log.Print(err)
-	} else {
-		store.setState(state)
-		notifySubscribers(store)
-	}
-
-}
-
-func notifySubscribers(store *Store) {
+func (store *Store) onChange() {
 	for _, sub := range store.subscribers {
-		(*sub)(store.state)
+		(*sub)(store.GetState())
 	}
 }
