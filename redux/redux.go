@@ -21,10 +21,13 @@ type Reducer func(State, Action) (State, error)
 type Subscriber func(State, Action)
 type Subscribers []*Subscriber
 
+type OnChange func(Subscribers, State, Action)
+
 type StoreBase struct {
 	isDispatching bool
 	reducer       Reducer
 	state         State
+	onChange      OnChange
 }
 
 func (store *StoreBase) GetState() State {
@@ -57,10 +60,11 @@ func (store *StoreBase) setState(state State) {
 	store.state = state
 }
 
-func CreateStoreBase(reducer Reducer, initialState State) StoreBase {
+func CreateStoreBase(reducer Reducer, initialState State, onChange OnChange) StoreBase {
 	store := StoreBase{}
 	store.reducer = reducer
 	store.setState(initialState)
+	store.onChange = onChange
 	return store
 }
 
@@ -89,7 +93,7 @@ func (store *Store) ReplaceReducer(nextReducer Reducer) {
 		log.Fatal(noInitialStateProducedErrMsg)
 	}
 
-	store.storeBase = CreateStoreBase(nextReducer, initialState)
+	store.storeBase = CreateStoreBase(nextReducer, initialState, onChange)
 
 	store.reducer = nextReducer
 }
