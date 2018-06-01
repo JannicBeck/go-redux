@@ -18,7 +18,8 @@ type State interface{}
 
 type Reducer func(State, Action) (State, error)
 
-type Subscriber func(State)
+type Subscriber func(State, Action)
+type Subscribers []*Subscriber
 
 type StoreBase struct {
 	isDispatching bool
@@ -30,7 +31,7 @@ func (store *StoreBase) GetState() State {
 	return store.state
 }
 
-func (store *StoreBase) Dispatch(action Action) {
+func (store *StoreBase) Dispatch(action Action, subscribers Subscribers) {
 
 	if store.isDispatching {
 		log.Fatal("Reducers may not dispatch actions.")
@@ -42,6 +43,13 @@ func (store *StoreBase) Dispatch(action Action) {
 		log.Fatal(err)
 	} else {
 		store.setState(state)
+		onChange(subscribers, store.GetState(), action)
+	}
+}
+
+func onChange(subscribers Subscribers, state State, action Action) {
+	for _, sub := range subscribers {
+		(*sub)(state, action)
 	}
 }
 
@@ -49,7 +57,7 @@ func (store *StoreBase) setState(state State) {
 	store.state = state
 }
 
-func CreateStoreAtom(reducer Reducer, initialState State) StoreBase {
+func CreateStoreBase(reducer Reducer, initialState State) StoreBase {
 	store := StoreBase{}
 	store.reducer = reducer
 	store.setState(initialState)
@@ -58,7 +66,7 @@ func CreateStoreAtom(reducer Reducer, initialState State) StoreBase {
 
 type Store struct {
 	storeBase     StoreBase
-	subscribers   []*Subscriber
+	subscribers   Subscribers
 	reducer       Reducer
 	isDispatching bool
 }
@@ -81,7 +89,7 @@ func (store *Store) ReplaceReducer(nextReducer Reducer) {
 		log.Fatal(noInitialStateProducedErrMsg)
 	}
 
-	store.storeBase = CreateStoreAtom(nextReducer, initialState)
+	store.storeBase = CreateStoreBase(nextReducer, initialState)
 
 	store.reducer = nextReducer
 }
@@ -94,6 +102,10 @@ func (i InitAction) Type() string {
 }
 
 func CreateStore(reducer Reducer) Store {
+
+	if reducer == nil {
+		log.Fatal(noReducerProvidedErrMsg)
+	}
 
 	store := Store{}
 	store.ReplaceReducer(reducer)
@@ -138,8 +150,7 @@ func (store *Store) Subscribe(subscriber *Subscriber) func() {
 }
 
 func (store *Store) Dispatch(action Action) {
-	store.storeBase.Dispatch(action)
-	store.onChange()
+	store.storeBase.Dispatch(action, store.subscribers)
 }
 
 func addSubscriber(store *Store, subscriber *Subscriber) {
@@ -160,10 +171,4 @@ func removeSubscriber(store *Store, subscriber *Subscriber) {
 
 	}
 
-}
-
-func (store *Store) onChange() {
-	for _, sub := range store.subscribers {
-		(*sub)(store.GetState())
-	}
 }

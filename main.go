@@ -5,7 +5,6 @@ import (
 
 	"github.com/jannicbeck/redux/counter"
 	"github.com/jannicbeck/redux/redux"
-	"github.com/jannicbeck/redux/todos"
 )
 
 func combineReducers(reducers map[string]redux.Reducer) func(redux.State, redux.Action) (redux.State, error) {
@@ -61,26 +60,35 @@ func combineReducers(reducers map[string]redux.Reducer) func(redux.State, redux.
 
 func main() {
 
-	reducerMap := make(map[string]redux.Reducer)
-	reducerMap["counter"] = counter.Counter
-	todosMap := make(map[string]redux.Reducer)
-	todosMap["todos"] = todos.Todos
-	todosMap["visibilityFilter"] = todos.VisibilityFilter
-	todosReducer := combineReducers(todosMap)
-	reducerMap["todos"] = todosReducer
-	root := combineReducers(reducerMap)
-
-	store := redux.CreateStore(root)
+	store := redux.CreateStore(counter.Counter)
 	var printState redux.Subscriber
-	printState = func(state redux.State) {
-		fmt.Println(state)
+	printState = func(state redux.State, action redux.Action) {
+		fmt.Println(state, action.Type())
 	}
-	unsubscribe := store.Subscribe(&printState)
-	store.Dispatch(todos.AddTodo{Id: "1", Text: "First"})
-	store.Dispatch(todos.AddTodo{Id: "2", Text: "Second"})
-	store.Dispatch(todos.AddTodo{Id: "3", Text: "Third"})
-	store.Dispatch(todos.ToggleTodo{Id: "2"})
+	store.Subscribe(&printState)
 	store.Dispatch(counter.Increment{})
-	unsubscribe()
+	store.Dispatch(counter.Increment{})
+
+	// reducerMap := make(map[string]redux.Reducer)
+	// reducerMap["counter"] = counter.Counter
+	// todosMap := make(map[string]redux.Reducer)
+	// todosMap["todos"] = todos.Todos
+	// todosMap["visibilityFilter"] = todos.VisibilityFilter
+	// todosReducer := combineReducers(todosMap)
+	// reducerMap["todos"] = todosReducer
+	// root := combineReducers(reducerMap)
+
+	// store := redux.CreateStore(root)
+	// var printState redux.Subscriber
+	// printState = func(state redux.State) {
+	// 	fmt.Println(state)
+	// }
+	// unsubscribe := store.Subscribe(&printState)
+	// store.Dispatch(todos.AddTodo{Id: "1", Text: "First"})
+	// store.Dispatch(todos.AddTodo{Id: "2", Text: "Second"})
+	// store.Dispatch(todos.AddTodo{Id: "3", Text: "Third"})
+	// store.Dispatch(todos.ToggleTodo{Id: "2"})
+	// store.Dispatch(counter.Increment{})
+	// unsubscribe()
 
 }

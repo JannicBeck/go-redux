@@ -133,7 +133,7 @@ func TestSubscription(t *testing.T) {
 	callbackCount := 0
 
 	var subscriber1 Subscriber
-	subscriber1 = func(state State) {
+	subscriber1 = func(state State, action Action) {
 		callbackCount = callbackCount + 1
 	}
 
@@ -141,7 +141,7 @@ func TestSubscription(t *testing.T) {
 	// and immediately unsubscribe to catch bugs related to indexing.
 	// E.g. we can not cache indices of subscribers since the indices change when unsubscribing.
 	var subscriber2 Subscriber
-	subscriber2 = func(state State) {
+	subscriber2 = func(state State, action Action) {
 	}
 	store.Subscribe(&subscriber2)()
 
