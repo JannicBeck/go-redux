@@ -21,51 +21,10 @@ type Reducer func(State, Action) (State, error)
 type Subscriber func(State, Action)
 type Subscribers []*Subscriber
 
-type OnChange func(Subscribers, State, Action)
-
-type StoreBase struct {
-	isDispatching bool
-	reducer       Reducer
-	state         State
-	onChange      OnChange
-}
-
-func (store *StoreBase) GetState() State {
-	return store.state
-}
-
-func (store *StoreBase) Dispatch(action Action, subscribers Subscribers) {
-
-	if store.isDispatching {
-		log.Fatal("Reducers may not dispatch actions.")
-	}
-
-	state, err := store.reducer(store.state, action)
-
-	if err != nil {
-		log.Fatal(err)
-	} else {
-		store.setState(state)
-		onChange(subscribers, store.GetState(), action)
-	}
-}
-
 func onChange(subscribers Subscribers, state State, action Action) {
 	for _, sub := range subscribers {
 		(*sub)(state, action)
 	}
-}
-
-func (store *StoreBase) setState(state State) {
-	store.state = state
-}
-
-func CreateStoreBase(reducer Reducer, initialState State, onChange OnChange) StoreBase {
-	store := StoreBase{}
-	store.reducer = reducer
-	store.setState(initialState)
-	store.onChange = onChange
-	return store
 }
 
 type Store struct {
@@ -75,14 +34,21 @@ type Store struct {
 	isDispatching bool
 }
 
+func CreateStore(reducer Reducer) Store {
+
+	if reducer == nil {
+		log.Fatal(noReducerProvidedErrMsg)
+	}
+
+	store := Store{}
+	store.ReplaceReducer(reducer)
+	return store
+}
+
 func (store *Store) ReplaceReducer(nextReducer Reducer) {
 
 	if nextReducer == nil {
 		log.Fatal("Expected the nextReducer to be a function.")
-	}
-
-	if nextReducer == nil {
-		log.Fatal(noReducerProvidedErrMsg)
 	}
 
 	initialState, err := nextReducer(nil, InitAction{})
@@ -103,17 +69,6 @@ type InitAction struct {
 
 func (i InitAction) Type() string {
 	return "@@Gorux/INIT"
-}
-
-func CreateStore(reducer Reducer) Store {
-
-	if reducer == nil {
-		log.Fatal(noReducerProvidedErrMsg)
-	}
-
-	store := Store{}
-	store.ReplaceReducer(reducer)
-	return store
 }
 
 func (store *Store) GetState() State {
