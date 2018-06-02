@@ -31,13 +31,11 @@ type Unsubscribe func()
 
 type OnChange func(State, Action)
 
-// TODO: to interface?
 type StoreBase struct {
 	GetState func() State
 	Dispatch func(Action) Action
 }
 
-// TODO: to interface?
 type Store struct {
 	GetState       func() State
 	ReplaceReducer func(Reducer)
@@ -47,7 +45,6 @@ type Store struct {
 
 func CreateStoreBase(reducer Reducer, initialState State, onChange OnChange) StoreBase {
 
-	store := StoreBase{}
 	var state State
 
 	GetState := func() State {
@@ -77,9 +74,12 @@ func CreateStoreBase(reducer Reducer, initialState State, onChange OnChange) Sto
 	}
 
 	state = initialState
-	store.GetState = GetState
-	store.Dispatch = Dispatch
-	return store
+
+	return StoreBase{
+		GetState,
+		Dispatch,
+	}
+
 }
 
 func CreateStore(reducer Reducer) Store {
@@ -96,8 +96,6 @@ func CreateStore(reducer Reducer) Store {
 	if initialState == nil {
 		log.Fatal(noInitialStateProducedErrMsg)
 	}
-
-	store := Store{}
 
 	var subscribers Subscribers
 
@@ -158,10 +156,11 @@ func CreateStore(reducer Reducer) Store {
 		return storeBase.Dispatch(action)
 	}
 
-	store.ReplaceReducer = ReplaceReducer
-	store.GetState = GetState
-	store.Subscribe = Subscribe
-	store.Dispatch = Dispatch
+	return Store{
+		GetState,
+		ReplaceReducer,
+		Subscribe,
+		Dispatch,
+	}
 
-	return store
 }
