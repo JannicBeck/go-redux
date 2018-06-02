@@ -43,10 +43,6 @@ func TestCreateStore(t *testing.T) {
 
 	store := CreateStore(counter)
 
-	if store.reducer == nil {
-		t.Error("Reducer must not be nil")
-	}
-
 	if store.GetState() != 0 {
 		t.Errorf("State expected: %v got %v", 0, store.GetState())
 	}
