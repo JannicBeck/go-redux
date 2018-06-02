@@ -31,9 +31,16 @@ type Unsubscribe func()
 
 type OnChange func(State, Action)
 
-type StoreBase struct {
-	GetState func() State
-	Dispatch func(Action) Action
+type StoreBase interface {
+	GetState() State
+	Dispatch(Action) Action
+}
+
+type DynamicStoreBase struct {
+	isDispatching bool
+	reducer       Reducer
+	state         State
+	onChange      func(State, Action)
 }
 
 type Store struct {
@@ -43,41 +50,37 @@ type Store struct {
 	Dispatch       func(Action) Action
 }
 
+func (store DynamicStoreBase) Dispatch(action Action) Action {
+
+	if store.isDispatching {
+		log.Fatal("Reducers may not dispatch actions.")
+	}
+
+	store.isDispatching = true
+	newState, err := store.reducer(store.state, action)
+
+	if err != nil {
+		log.Fatal(err)
+	} else {
+		store.isDispatching = false
+		store.state = newState
+		store.onChange(newState, action)
+	}
+
+	return action
+}
+
+func (store DynamicStoreBase) GetState() State {
+	return store.state
+}
+
 func CreateStoreBase(reducer Reducer, initialState State, onChange OnChange) StoreBase {
 
-	var state State
-
-	GetState := func() State {
-		return state
-	}
-
-	var isDispatching bool
-
-	Dispatch := func(action Action) Action {
-
-		if isDispatching {
-			log.Fatal("Reducers may not dispatch actions.")
-		}
-
-		isDispatching = true
-		newState, err := reducer(state, action)
-
-		if err != nil {
-			log.Fatal(err)
-		} else {
-			isDispatching = false
-			state = newState
-			onChange(newState, action)
-		}
-
-		return action
-	}
-
-	state = initialState
-
-	return StoreBase{
-		GetState,
-		Dispatch,
+	return DynamicStoreBase{
+		false,
+		reducer,
+		initialState,
+		onChange,
 	}
 
 }
