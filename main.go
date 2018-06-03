@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/jannicbeck/redux/counter"
 	"github.com/jannicbeck/redux/redux"
@@ -60,6 +59,7 @@ func combineReducers(reducers map[string]redux.Reducer) func(redux.State, redux.
 // }
 
 type StoreBaseLog struct {
+	redux.StoreBase
 	isDispatching bool
 	reducer       redux.Reducer
 	state         redux.State
@@ -67,43 +67,26 @@ type StoreBaseLog struct {
 }
 
 func (store *StoreBaseLog) Dispatch(action redux.Action) redux.Action {
-
-	if store.isDispatching {
-		log.Fatal("Reducers may not dispatch actions.")
-	}
-
-	store.isDispatching = true
-	newState, err := store.reducer(store.state, action)
-
-	if err != nil {
-		log.Fatal(err)
-	} else {
-		store.isDispatching = false
-		store.state = newState
-		store.onChange(newState, action)
-	}
 	fmt.Println(action.Type())
-
-	return action
+	return store.StoreBase.Dispatch(action)
 }
 
 func (store *StoreBaseLog) GetState() redux.State {
-	return store.state
-}
-
-func createStoreBaseLog(reducer redux.Reducer, initialState redux.State, onChange redux.OnChange) redux.StoreBase {
-
-	return &StoreBaseLog{
-		false,
-		reducer,
-		initialState,
-		onChange,
-	}
-
+	return store.StoreBase.GetState()
 }
 
 func logEnhancer(createStoreBase redux.CreateStoreBaseFn) redux.CreateStoreBaseFn {
-	return createStoreBaseLog
+	return func(reducer redux.Reducer, initialState redux.State, onChange redux.OnChange) redux.StoreBase {
+
+		return &StoreBaseLog{
+			createStoreBase(reducer, initialState, onChange),
+			false,
+			reducer,
+			initialState,
+			onChange,
+		}
+
+	}
 }
 
 func main() {
