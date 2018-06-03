@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/jannicbeck/redux/counter"
 	"github.com/jannicbeck/redux/redux"
@@ -58,9 +59,56 @@ func combineReducers(reducers map[string]redux.Reducer) func(redux.State, redux.
 // 	}
 // }
 
+type StoreBaseLog struct {
+	isDispatching bool
+	reducer       redux.Reducer
+	state         redux.State
+	onChange      func(redux.State, redux.Action)
+}
+
+func (store *StoreBaseLog) Dispatch(action redux.Action) redux.Action {
+
+	if store.isDispatching {
+		log.Fatal("Reducers may not dispatch actions.")
+	}
+
+	store.isDispatching = true
+	newState, err := store.reducer(store.state, action)
+
+	if err != nil {
+		log.Fatal(err)
+	} else {
+		store.isDispatching = false
+		store.state = newState
+		store.onChange(newState, action)
+	}
+	fmt.Println(action.Type())
+
+	return action
+}
+
+func (store *StoreBaseLog) GetState() redux.State {
+	return store.state
+}
+
+func createStoreBaseLog(reducer redux.Reducer, initialState redux.State, onChange redux.OnChange) redux.StoreBase {
+
+	return &StoreBaseLog{
+		false,
+		reducer,
+		initialState,
+		onChange,
+	}
+
+}
+
+func logEnhancer(createStoreBase redux.CreateStoreBaseFn) redux.CreateStoreBaseFn {
+	return createStoreBaseLog
+}
+
 func main() {
 
-	store := redux.CreateStore(counter.Counter, nil, nil)
+	store := redux.CreateStore(counter.Counter, nil, logEnhancer)
 	var printState redux.Subscriber
 	printState = func(state redux.State, action redux.Action) {
 		fmt.Println(state, action.Type())
