@@ -50,7 +50,7 @@ type Store struct {
 	Dispatch       func(Action) Action
 }
 
-func (store DynamicStoreBase) Dispatch(action Action) Action {
+func (store *DynamicStoreBase) Dispatch(action Action) Action {
 
 	if store.isDispatching {
 		log.Fatal("Reducers may not dispatch actions.")
@@ -70,13 +70,13 @@ func (store DynamicStoreBase) Dispatch(action Action) Action {
 	return action
 }
 
-func (store DynamicStoreBase) GetState() State {
+func (store *DynamicStoreBase) GetState() State {
 	return store.state
 }
 
 func CreateStoreBase(reducer Reducer, initialState State, onChange OnChange) StoreBase {
 
-	return DynamicStoreBase{
+	return &DynamicStoreBase{
 		false,
 		reducer,
 		initialState,
@@ -85,19 +85,26 @@ func CreateStoreBase(reducer Reducer, initialState State, onChange OnChange) Sto
 
 }
 
-func CreateStore(reducer Reducer) Store {
+type CreateStoreBaseFn func(Reducer, State, OnChange) StoreBase
+
+func CreateStore(reducer Reducer, initialState State, enhancer func(CreateStoreBaseFn) CreateStoreBaseFn) Store {
 
 	if reducer == nil {
 		log.Fatal(noReducerProvidedErrMsg)
 	}
 
-	initialState, err := reducer(nil, InitAction{})
-
-	if err != nil {
-		log.Fatal("Error when producing initial state")
-	}
 	if initialState == nil {
-		log.Fatal(noInitialStateProducedErrMsg)
+		initialReducerState, err := reducer(nil, InitAction{})
+
+		if err != nil {
+			log.Fatal("Error when producing initial state with reducer")
+		}
+
+		if initialReducerState == nil {
+			log.Fatal(noInitialStateProducedErrMsg)
+		}
+
+		initialState = initialReducerState
 	}
 
 	var subscribers Subscribers
@@ -108,16 +115,15 @@ func CreateStore(reducer Reducer) Store {
 		}
 	}
 
-	storeBase := CreateStoreBase(reducer, initialState, onChange)
-
-	ReplaceReducer := func(nextReducer Reducer) {
-
-		if nextReducer == nil {
-			log.Fatal("Expected the nextReducer to be a function.")
+	if enhancer == nil {
+		enhancer = func(x CreateStoreBaseFn) CreateStoreBaseFn {
+			return x
 		}
-
-		reducer = nextReducer
 	}
+
+	createFinalStoreBase := enhancer(CreateStoreBase)
+
+	storeBase := createFinalStoreBase(reducer, initialState, onChange)
 
 	GetState := func() State {
 		return storeBase.GetState()
@@ -157,6 +163,25 @@ func CreateStore(reducer Reducer) Store {
 
 	Dispatch := func(action Action) Action {
 		return storeBase.Dispatch(action)
+	}
+
+	ReplaceReducer := func(nextReducer Reducer) {
+
+		if nextReducer == nil {
+			log.Fatal("Expected the nextReducer to be a function.")
+		}
+
+		var nextInitialState State
+		if storeBase != nil {
+			nextInitialState = GetState()
+		} else {
+			nextInitialState = initialState
+		}
+
+		storeBase = CreateStoreBase(nextReducer, nextInitialState, onChange)
+		Dispatch(InitAction{})
+
+		reducer = nextReducer
 	}
 
 	return Store{

@@ -60,7 +60,7 @@ func combineReducers(reducers map[string]redux.Reducer) func(redux.State, redux.
 
 func main() {
 
-	store := redux.CreateStore(counter.Counter)
+	store := redux.CreateStore(counter.Counter, nil, nil)
 	var printState redux.Subscriber
 	printState = func(state redux.State, action redux.Action) {
 		fmt.Println(state, action.Type())

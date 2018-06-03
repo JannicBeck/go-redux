@@ -143,14 +143,6 @@ func TestSubscription(t *testing.T) {
 
 	unsubscribe := store.Subscribe(&subscriber1)
 
-	if store.subscribers[0] != &subscriber1 {
-		t.Errorf("Wrong subscriber %v got %v", &subscriber1, store.subscribers[0])
-	}
-
-	if len(store.subscribers) != 1 {
-		t.Errorf("Expected subscriber count to be %v got %v", 1, len(store.subscribers))
-	}
-
 	store.Dispatch(Increment{})
 	if callbackCount != 1 {
 		t.Errorf("Subscribe state: %v, want %v", callbackCount, 1)
