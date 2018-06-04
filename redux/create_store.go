@@ -74,7 +74,7 @@ func (store *storeBase) GetState() State {
 	return store.state
 }
 
-func CreateStoreBase(reducer Reducer, initialState State, onChange OnChange) StoreBase {
+func createStoreBase(reducer Reducer, initialState State, onChange OnChange) StoreBase {
 
 	return &storeBase{
 		false,
@@ -85,9 +85,9 @@ func CreateStoreBase(reducer Reducer, initialState State, onChange OnChange) Sto
 
 }
 
-type CreateStoreBaseFn func(Reducer, State, OnChange) StoreBase
+type CreateStoreBase func(Reducer, State, OnChange) StoreBase
 
-func CreateStore(reducer Reducer, initialState State, enhancer func(CreateStoreBaseFn) CreateStoreBaseFn) Store {
+func CreateStore(reducer Reducer, initialState State, enhancer func(CreateStoreBase) CreateStoreBase) Store {
 
 	if reducer == nil {
 		log.Fatal(noReducerProvidedErrMsg)
@@ -116,12 +116,12 @@ func CreateStore(reducer Reducer, initialState State, enhancer func(CreateStoreB
 	}
 
 	if enhancer == nil {
-		enhancer = func(x CreateStoreBaseFn) CreateStoreBaseFn {
+		enhancer = func(x CreateStoreBase) CreateStoreBase {
 			return x
 		}
 	}
 
-	createFinalStoreBase := enhancer(CreateStoreBase)
+	createFinalStoreBase := enhancer(createStoreBase)
 
 	storeBase := createFinalStoreBase(reducer, initialState, onChange)
 
@@ -178,7 +178,7 @@ func CreateStore(reducer Reducer, initialState State, enhancer func(CreateStoreB
 			nextInitialState = initialState
 		}
 
-		storeBase = CreateStoreBase(nextReducer, nextInitialState, onChange)
+		storeBase = createStoreBase(nextReducer, nextInitialState, onChange)
 		Dispatch(InitAction{})
 
 		reducer = nextReducer

@@ -17,7 +17,7 @@ func (store *StoreBaseLog) Dispatch(action redux.Action) redux.Action {
 	return store.StoreBase.Dispatch(action)
 }
 
-func logEnhancer(createStoreBase redux.CreateStoreBaseFn) redux.CreateStoreBaseFn {
+func logEnhancer(createStoreBase redux.CreateStoreBase) redux.CreateStoreBase {
 	return func(reducer redux.Reducer, initialState redux.State, onChange redux.OnChange) redux.StoreBase {
 
 		return &StoreBaseLog{
