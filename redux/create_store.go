@@ -36,7 +36,7 @@ type StoreBase interface {
 	Dispatch(Action) Action
 }
 
-type DynamicStoreBase struct {
+type storeBase struct {
 	isDispatching bool
 	reducer       Reducer
 	state         State
@@ -50,7 +50,7 @@ type Store struct {
 	Dispatch       func(Action) Action
 }
 
-func (store *DynamicStoreBase) Dispatch(action Action) Action {
+func (store *storeBase) Dispatch(action Action) Action {
 
 	if store.isDispatching {
 		log.Fatal("Reducers may not dispatch actions.")
@@ -70,13 +70,13 @@ func (store *DynamicStoreBase) Dispatch(action Action) Action {
 	return action
 }
 
-func (store *DynamicStoreBase) GetState() State {
+func (store *storeBase) GetState() State {
 	return store.state
 }
 
 func CreateStoreBase(reducer Reducer, initialState State, onChange OnChange) StoreBase {
 
-	return &DynamicStoreBase{
+	return &storeBase{
 		false,
 		reducer,
 		initialState,

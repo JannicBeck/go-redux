@@ -5,6 +5,7 @@ import (
 
 	"github.com/jannicbeck/redux/counter"
 	"github.com/jannicbeck/redux/redux"
+	"github.com/jannicbeck/redux/todos"
 )
 
 type StoreBaseLog struct {
@@ -28,34 +29,34 @@ func logEnhancer(createStoreBase redux.CreateStoreBaseFn) redux.CreateStoreBaseF
 
 func main() {
 
-	store := redux.CreateStore(counter.Counter, nil, logEnhancer)
-	var printState redux.Subscriber
-	printState = func(state redux.State, action redux.Action) {
-		fmt.Println(state, action.Type())
-	}
-	store.Subscribe(&printState)
-	store.Dispatch(counter.Increment{})
-	store.Dispatch(counter.Increment{})
-
-	// reducerMap := make(map[string]redux.Reducer)
-	// reducerMap["counter"] = counter.Counter
-	// todosMap := make(map[string]redux.Reducer)
-	// todosMap["todos"] = todos.Todos
-	// todosMap["visibilityFilter"] = todos.VisibilityFilter
-	// todosReducer := redux.CombineReducers(todosMap)
-	// reducerMap["todos"] = todosReducer
-	// root := redux.CombineReducers(reducerMap)
-
-	// store := redux.CreateStore(root, nil, nil)
+	// store := redux.CreateStore(counter.Counter, nil, logEnhancer)
 	// var printState redux.Subscriber
 	// printState = func(state redux.State, action redux.Action) {
-	// 	fmt.Println(state)
+	// 	fmt.Println(state, action.Type())
 	// }
-	// unsubscribe := store.Subscribe(&printState)
-	// store.Dispatch(todos.AddTodo{Id: "1", Text: "First"})
-	// store.Dispatch(todos.AddTodo{Id: "2", Text: "Second"})
-	// store.Dispatch(todos.AddTodo{Id: "3", Text: "Third"})
-	// store.Dispatch(todos.ToggleTodo{Id: "2"})
-	// unsubscribe()
+	// store.Subscribe(&printState)
+	// store.Dispatch(counter.Increment{})
+	// store.Dispatch(counter.Increment{})
+
+	reducerMap := make(map[string]redux.Reducer)
+	reducerMap["counter"] = counter.Counter
+	todosMap := make(map[string]redux.Reducer)
+	todosMap["todos"] = todos.Todos
+	todosMap["visibilityFilter"] = todos.VisibilityFilter
+	todosReducer := redux.CombineReducers(todosMap)
+	reducerMap["todos"] = todosReducer
+	root := redux.CombineReducers(reducerMap)
+
+	store := redux.CreateStore(root, nil, nil)
+	var printState redux.Subscriber
+	printState = func(state redux.State, action redux.Action) {
+		fmt.Println(state)
+	}
+	unsubscribe := store.Subscribe(&printState)
+	store.Dispatch(todos.AddTodo{Id: "1", Text: "First"})
+	store.Dispatch(todos.AddTodo{Id: "2", Text: "Second"})
+	store.Dispatch(todos.AddTodo{Id: "3", Text: "Third"})
+	store.Dispatch(todos.ToggleTodo{Id: "2"})
+	unsubscribe()
 
 }
