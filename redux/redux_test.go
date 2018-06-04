@@ -41,7 +41,7 @@ func (dec Decrement) Type() string {
 
 func TestCreateStore(t *testing.T) {
 
-	store := CreateStore(counter)
+	store := CreateStore(counter, nil, nil)
 
 	if store.GetState() != 0 {
 		t.Errorf("State expected: %v got %v", 0, store.GetState())
@@ -54,7 +54,7 @@ func TestCreateStoreWithoutInitialStateFatal(t *testing.T) {
 	fn := func() {
 		CreateStore(func(state State, action Action) (State, error) {
 			return state, nil
-		})
+		}, nil, nil)
 	}
 	command := "-test.run=TestCreateStoreWithoutInitialStateFatal"
 
@@ -64,7 +64,7 @@ func TestCreateStoreWithoutInitialStateFatal(t *testing.T) {
 func TestCreateStoreWithoutReducerFatal(t *testing.T) {
 
 	fn := func() {
-		CreateStore(nil)
+		CreateStore(nil, nil, nil)
 	}
 	command := "-test.run=TestCreateStoreWithoutReducerFatal"
 
@@ -103,7 +103,7 @@ func crashTest(t *testing.T, fn func(), command string, errMsg string) {
 
 func TestStore(t *testing.T) {
 
-	store := CreateStore(counter)
+	store := CreateStore(counter, nil, nil)
 
 	var tests = []struct {
 		a Action
@@ -125,7 +125,7 @@ func TestStore(t *testing.T) {
 
 func TestSubscription(t *testing.T) {
 
-	store := CreateStore(counter)
+	store := CreateStore(counter, nil, nil)
 	callbackCount := 0
 
 	var subscriber1 Subscriber
@@ -166,7 +166,7 @@ func TestSubscription(t *testing.T) {
 
 func TestReplaceReducer(t *testing.T) {
 
-	store := CreateStore(counter)
+	store := CreateStore(counter, nil, nil)
 	store.ReplaceReducer(func(state State, action Action) (State, error) {
 		if state == nil {
 			state = 0
