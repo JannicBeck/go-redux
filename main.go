@@ -60,10 +60,6 @@ func combineReducers(reducers map[string]redux.Reducer) func(redux.State, redux.
 
 type StoreBaseLog struct {
 	redux.StoreBase
-	isDispatching bool
-	reducer       redux.Reducer
-	state         redux.State
-	onChange      func(redux.State, redux.Action)
 }
 
 func (store *StoreBaseLog) Dispatch(action redux.Action) redux.Action {
@@ -71,19 +67,11 @@ func (store *StoreBaseLog) Dispatch(action redux.Action) redux.Action {
 	return store.StoreBase.Dispatch(action)
 }
 
-func (store *StoreBaseLog) GetState() redux.State {
-	return store.StoreBase.GetState()
-}
-
 func logEnhancer(createStoreBase redux.CreateStoreBaseFn) redux.CreateStoreBaseFn {
 	return func(reducer redux.Reducer, initialState redux.State, onChange redux.OnChange) redux.StoreBase {
 
 		return &StoreBaseLog{
 			createStoreBase(reducer, initialState, onChange),
-			false,
-			reducer,
-			initialState,
-			onChange,
 		}
 
 	}
